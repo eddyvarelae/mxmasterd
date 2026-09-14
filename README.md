@@ -54,16 +54,26 @@ keystroke. Mission Control is launched the same way the OS does it
 
 ## Build & install
 
+Requires macOS with the Swift toolchain (Xcode or Command Line Tools) and an
+MX Master 3S paired over Bluetooth. Clone the repo, then:
+
 ```sh
-swiftc -O -parse-as-library -o bin/mxmasterd src/mxmasterd.swift
-cp com.varela.mxmasterd.plist ~/Library/LaunchAgents/
-launchctl bootstrap gui/$UID ~/Library/LaunchAgents/com.varela.mxmasterd.plist
-# after a rebuild:
-launchctl kickstart -k gui/$UID/com.varela.mxmasterd
+./install.sh      # builds the binary and loads the launchd agent
+./uninstall.sh    # stops and removes the agent
 ```
 
-Logs: `~/Library/Logs/mxmasterd.log`. Set `MXDBG=1` in the environment for
-verbose event/gesture tracing.
+`install.sh` derives every path from the repo location — nothing is hardcoded —
+and writes `~/Library/LaunchAgents/io.github.mxmasterd.plist`. To rebuild after
+editing the source, just run `./install.sh` again.
+
+Manual build (no launchd):
+
+```sh
+swiftc -O -parse-as-library -o bin/mxmasterd src/mxmasterd.swift
+./bin/mxmasterd            # add MXDBG=1 for verbose event/gesture tracing
+```
+
+Logs: `~/Library/Logs/mxmasterd.log`.
 
 The binary needs two one-time grants in System Settings → Privacy & Security:
 **Input Monitoring** (open the HID device) and **Accessibility** (post
@@ -71,11 +81,15 @@ keystrokes / control Spaces). Because the build is unsigned, replacing the
 binary changes its hash and the grants must be re-approved — sign with a stable
 identity to avoid this.
 
+The dashboard is found automatically next to the binary (or via the
+`MXMASTERD_DASHBOARD` environment variable).
+
 ## Files
 
 - `src/mxmasterd.swift` — the daemon (single file, no dependencies)
 - `dashboard.html` — the live visualizer (served by the daemon)
-- `com.varela.mxmasterd.plist` — launchd agent (RunAtLoad + KeepAlive)
+- `install.sh` / `uninstall.sh` — build + launchd agent management
+- `mxmasterd.plist.template` — launchd template (paths filled in at install)
 - `tools/` — HID++ probe tools from development; `hidpp.swift` is the shared
   client. Build one with:
   `swiftc -parse-as-library -o tools/probe tools/hidpp.swift tools/probe.swift`

@@ -31,8 +31,21 @@ func log(_ msg: String) {
 // and a Server-Sent-Events stream of daemon activity at /events.
 final class Visualizer {
     let port: UInt16 = 8722
-    let htmlPath = "/Users/varela/Projects/mxmasterd/dashboard.html"
+    let htmlPath = Visualizer.resolveDashboard()
     private var clients: [Int32] = []
+
+    // Find dashboard.html without any hardcoded user path: env override first,
+    // then next to the executable, then one level up (repo layout: bin/ + root).
+    static func resolveDashboard() -> String {
+        if let env = ProcessInfo.processInfo.environment["MXMASTERD_DASHBOARD"] { return env }
+        let exe = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
+        let dir = exe.deletingLastPathComponent()
+        for candidate in [dir, dir.deletingLastPathComponent()] {
+            let p = candidate.appendingPathComponent("dashboard.html").path
+            if FileManager.default.fileExists(atPath: p) { return p }
+        }
+        return dir.appendingPathComponent("dashboard.html").path
+    }
     private let lock = NSLock()
     var stateProvider: (() -> String)?
 

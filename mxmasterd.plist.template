@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>com.varela.mxmasterd</string>
+	<string>io.github.mxmasterd</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/Users/varela/Projects/mxmasterd/bin/mxmasterd</string>
+		<string>__BIN__</string>
 	</array>
 	<key>RunAtLoad</key>
 	<true/>
@@ -15,8 +15,8 @@
 	<key>ProcessType</key>
 	<string>Interactive</string>
 	<key>StandardOutPath</key>
-	<string>/Users/varela/Library/Logs/mxmasterd.log</string>
+	<string>__LOG__</string>
 	<key>StandardErrorPath</key>
-	<string>/Users/varela/Library/Logs/mxmasterd.log</string>
+	<string>__LOG__</string>
 </dict>
 </plist>
