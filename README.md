@@ -1,9 +1,12 @@
-# mxmaster-agent
+# mxmasterd
 
-A driverless button agent for the Logitech MX Master 3S — a small Swift daemon
-that replaces the parts of Logi Options+ actually worth keeping. It speaks
-Logitech's HID++ 2.0 protocol directly to the mouse over Bluetooth LE; no
-Logitech software involved.
+A driverless button & gesture daemon for the Logitech MX Master 3S — a small
+Swift program that replaces the parts of Logi Options+ actually worth keeping.
+It speaks Logitech's HID++ 2.0 protocol directly to the mouse over Bluetooth LE;
+no Logitech software involved.
+
+> Name note: `mxmasterd` follows the Unix daemon convention (the trailing `d`).
+> It's a background service, not an "AI agent".
 
 ## Mapping
 

@@ -2,10 +2,10 @@ import Foundation
 import IOKit.hid
 import CoreGraphics
 
-// mxmasterd — driverless button agent for the MX Master 3S (Bluetooth LE).
+// mxmasterd — driverless button & gesture daemon for the MX Master 3S (BLE).
 //
 // Speaks HID++ 2.0 on the vendor channel (long reports, ID 0x11) to divert:
-//   thumb pad   (CID 0x00C3) -> Mission Control (Ctrl+Up)
+//   thumb pad   (CID 0x00C3) -> tap: Mission Control; hold+drag: switch Space
 //   mode button (CID 0x00C4) -> Paste (Cmd+V)
 //   wheel click (CID 0x0052) -> SmartShift clutch toggle (ratchet <-> free-spin)
 //
@@ -31,7 +31,7 @@ func log(_ msg: String) {
 // and a Server-Sent-Events stream of daemon activity at /events.
 final class Visualizer {
     let port: UInt16 = 8722
-    let htmlPath = "/Users/varela/Projects/mxmaster-agent/dashboard.html"
+    let htmlPath = "/Users/varela/Projects/mxmasterd/dashboard.html"
     private var clients: [Int32] = []
     private let lock = NSLock()
     var stateProvider: (() -> String)?

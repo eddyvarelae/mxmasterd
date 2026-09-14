@@ -6,7 +6,7 @@
 	<string>com.varela.mxmasterd</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/Users/varela/Projects/mxmaster-agent/bin/mxmasterd</string>
+		<string>/Users/varela/Projects/mxmasterd/bin/mxmasterd</string>
 	</array>
 	<key>RunAtLoad</key>
 	<true/>
