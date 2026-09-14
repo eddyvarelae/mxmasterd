@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mxmasterd — live</title>
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #111820; --line: #1e2a36;
+    --dim: #5b7186; --fg: #cfe3f2; --cyan: #37d6ff; --green: #3dffa0;
+    --amber: #ffc857; --pink: #ff5c8a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg); height: 100vh; overflow: hidden;
+    font: 14px/1.45 "SF Mono", ui-monospace, Menlo, monospace;
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px; border-bottom: 1px solid var(--line);
+  }
+  header h1 { font-size: 15px; font-weight: 600; letter-spacing: .04em; }
+  header h1 span { color: var(--cyan); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pink); }
+  .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .badge {
+    margin-left: auto; padding: 4px 12px; border: 1px solid var(--line);
+    border-radius: 6px; color: var(--dim); font-size: 12px; letter-spacing: .06em;
+  }
+  .badge b { color: var(--amber); font-weight: 600; }
+  main { flex: 1; display: flex; min-height: 0; }
+  .stage { flex: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+
+  /* mouse svg */
+  .zone { fill: #17212c; stroke: #2a3949; stroke-width: 1.5; transition: all .12s; }
+  .zone.hot { fill: #0e3d4d; stroke: var(--cyan); filter: drop-shadow(0 0 10px var(--cyan)); }
+  .body-shell { fill: #131c26; stroke: #263545; stroke-width: 2; }
+  .lbl { fill: var(--dim); font: 11px "SF Mono", monospace; }
+  .lbl.hot { fill: var(--cyan); }
+
+  /* gesture meter */
+  .meter-wrap { width: 420px; text-align: center; }
+  .meter-title { color: var(--dim); font-size: 11px; letter-spacing: .12em; margin-bottom: 8px; }
+  .meter { position: relative; height: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .meter .fill { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; background: var(--cyan); opacity: .85; transition: width .05s, left .05s; }
+  .meter .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--dim); opacity: .6; }
+  .arrows { display: flex; justify-content: space-between; margin-top: 6px; color: var(--dim); font-size: 11px; }
+  .arrows .flash { color: var(--green); text-shadow: 0 0 8px var(--green); }
+
+  /* toast */
+  #toast {
+    min-height: 46px; font-size: 22px; font-weight: 700; letter-spacing: .08em;
+    color: var(--green); opacity: 0; transition: opacity .15s;
+  }
+  #toast.show { opacity: 1; }
+
+  /* feed */
+  .feed {
+    flex: .8; border-left: 1px solid var(--line); padding: 16px 20px;
+    overflow-y: auto; display: flex; flex-direction: column-reverse;
+  }
+  .feed div { color: var(--dim); white-space: nowrap; }
+  .feed div b { color: var(--fg); font-weight: 500; }
+  .feed div.act b { color: var(--green); }
+  .feed .ts { color: #33475c; margin-right: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="dot" id="conn"></div>
+  <h1>mxmasterd <span>— live event stream</span></h1>
+  <div class="badge">CLUTCH <b id="clutch">—</b></div>
+</header>
+<main>
+  <div class="stage">
+    <svg width="360" height="420" viewBox="0 0 360 420">
+      <!-- body: side view, thumb side facing viewer -->
+      <path class="body-shell" d="M 95 55 C 140 18 250 20 285 80 C 316 135 316 290 280 350
+        C 245 405 130 410 95 355 C 60 300 48 250 55 190 C 60 140 68 78 95 55 Z"/>
+      <!-- scroll wheel -->
+      <rect class="zone" id="z-wheelzone" x="168" y="48" width="30" height="66" rx="14"/>
+      <line x1="183" y1="60" x2="183" y2="102" stroke="#3b5268" stroke-width="2" stroke-dasharray="3 4"/>
+      <!-- mode button B -->
+      <rect class="zone" id="z-mode" x="172" y="128" width="22" height="20" rx="5"/>
+      <!-- thumb wheel -->
+      <rect class="zone" x="86" y="150" width="14" height="52" rx="7" style="pointer-events:none"/>
+      <!-- thumb pad -->
+      <path class="zone" id="z-thumb" d="M 66 250 C 90 236 122 240 132 262 C 142 285 122 306 96 308
+        C 72 310 54 292 58 272 C 60 262 62 254 66 250 Z"/>
+      <!-- labels -->
+      <text class="lbl" id="l-wheelzone" x="215" y="85">wheel click → clutch</text>
+      <text class="lbl" id="l-mode" x="212" y="143">B → paste ⌘V</text>
+      <text class="lbl" id="l-thumb" x="148" y="284">thumb pad → mission control / swipe</text>
+    </svg>
+    <div class="meter-wrap">
+      <div class="meter-title">GESTURE DRAG — HOLD THUMB + MOVE</div>
+      <div class="meter" id="meter">
+        <div class="tick" style="left:8%"></div>
+        <div class="tick" style="left:50%"></div>
+        <div class="tick" style="left:92%"></div>
+        <div class="fill" id="fill"></div>
+      </div>
+      <div class="arrows"><span id="arrL">◀ desktop</span><span id="arrR">desktop ▶</span></div>
+    </div>
+    <div id="toast"></div>
+  </div>
+  <div class="feed" id="feed"></div>
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  const zones = { thumb: "z-thumb", mode: "z-mode", wheel: "z-wheelzone" };
+  const labels = { thumb: "l-thumb", mode: "l-mode", wheel: "l-wheelzone" };
+  const names = { thumb: "thumb pad", mode: "button B", wheel: "wheel click" };
+  const THRESH = 900;
+  let toastTimer, flashTimer;
+
+  function feed(html, cls) {
+    const d = document.createElement("div");
+    if (cls) d.className = cls;
+    const ts = new Date().toLocaleTimeString("en-GB");
+    d.innerHTML = `<span class="ts">${ts}</span>${html}`;
+    $("feed").prepend(d);
+    while ($("feed").children.length > 200) $("feed").lastChild.remove();
+  }
+
+  function toast(text) {
+    $("toast").textContent = text;
+    $("toast").classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $("toast").classList.remove("show"), 900);
+  }
+
+  function meter(acc) {
+    const f = $("fill");
+    const half = Math.min(Math.abs(acc) / THRESH, 1) * 42; // % of bar half-width
+    if (acc >= 0) { f.style.left = "50%"; f.style.width = half + "%"; }
+    else { f.style.left = (50 - half) + "%"; f.style.width = half + "%"; }
+  }
+
+  function flashArrow(dir) {
+    const el = dir === "right" ? $("arrR") : $("arrL");
+    el.classList.add("flash");
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => {
+      $("arrR").classList.remove("flash"); $("arrL").classList.remove("flash");
+    }, 500);
+  }
+
+  const es = new EventSource("/events");
+  es.onopen = () => { $("conn").classList.add("on"); feed("<b>connected to mxmasterd</b>"); };
+  es.onerror = () => $("conn").classList.remove("on");
+  es.onmessage = e => {
+    const m = JSON.parse(e.data);
+    switch (m.t) {
+      case "state":
+        $("clutch").textContent = m.clutch.toUpperCase();
+        feed(`<b>state</b> clutch=${m.clutch} configured=${m.connected}`);
+        break;
+      case "press":
+        document.getElementById(zones[m.c]).classList.add("hot");
+        document.getElementById(labels[m.c]).classList.add("hot");
+        feed(`<b>${names[m.c]}</b> pressed`);
+        break;
+      case "release":
+        document.getElementById(zones[m.c]).classList.remove("hot");
+        document.getElementById(labels[m.c]).classList.remove("hot");
+        if (m.c === "thumb") meter(0);
+        break;
+      case "gesture":
+        meter(m.acc);
+        break;
+      case "action":
+        if (m.a === "mission") { toast("MISSION CONTROL"); feed("<b>→ mission control</b>", "act"); }
+        if (m.a === "paste") { toast("PASTE ⌘V"); feed("<b>→ paste ⌘V</b>", "act"); }
+        if (m.a === "clutch") {
+          toast("CLUTCH → " + m.mode.toUpperCase());
+          $("clutch").textContent = m.mode.toUpperCase();
+          feed(`<b>→ clutch ${m.mode}</b>`, "act");
+        }
+        if (m.a === "desktop") {
+          toast(m.dir === "right" ? "DESKTOP ▶" : "◀ DESKTOP");
+          flashArrow(m.dir);
+          feed(`<b>→ switch desktop ${m.dir}</b>`, "act");
+        }
+        break;
+    }
+  };
+</script>
+</body>
+</html>

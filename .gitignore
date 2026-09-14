@@ -1,0 +1,10 @@
+# Compiled Swift binaries
+bin/
+tools/probe
+tools/probe[0-9]
+tools/dbgopen
+*.o
+*.dSYM/
+
+# macOS
+.DS_Store
